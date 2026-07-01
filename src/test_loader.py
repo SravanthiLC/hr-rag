@@ -1,9 +1,21 @@
+from pathlib import Path
 from docx import Document
 
-file_path = "data/company_bronze/data/content/policies/leave_policy_en.docx"
+policy_dir = Path(
+    "data/company_bronze/data/content/policies"
+)
 
-doc = Document(file_path)
+for file in policy_dir.glob("*_en.docx"):
+    doc = Document(file)
 
-for para in doc.paragraphs[:10]:
-    print(para.text)
+    text = "\n".join(
+        p.text
+        for p in doc.paragraphs
+        if p.text.strip()
+    )
 
+    print("=" * 80)
+    print(file.name)
+    print("=" * 80)
+    print(text[:500])
+    print()
