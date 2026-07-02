@@ -92,7 +92,7 @@ hr-rag/
 Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/SravanthiLC/hr-rag.git
 cd hr-rag
 ```
 
