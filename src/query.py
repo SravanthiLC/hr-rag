@@ -1,92 +1,91 @@
 import chromadb
 import ollama
-
 from sentence_transformers import SentenceTransformer
 
-# Load embedding model
+from prompts import PROMPT_TEMPLATE
 
-print("Loading embedding model...")
+# Name of the ChromaDB collection
+COLLECTION_NAME = "hr_policies"
 
-embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
-# Connect to ChromaDB
+def main():
+    print("Loading embedding model...")
 
-client = chromadb.PersistentClient(path="chroma_db")
+    embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
-collection = client.get_collection("hr_policies")
+    # Connect to the existing ChromaDB
+    client = chromadb.PersistentClient(path="chroma_db")
 
-print("Connected to vector database.")
+    collection = client.get_collection(COLLECTION_NAME)
 
-# Interactive loop
+    print("Connected to vector database.")
 
-while True:
+    while True:
 
-    question = input("\nAsk a question (or type 'exit'): ")
+        question = input("\nAsk a question (or type 'exit'): ").strip()
 
-    if question.lower() == "exit":
-        break
+        if question.lower() == "exit":
+            print("Goodbye!")
+            break
 
-    # Embed question
-    query_embedding = embedding_model.encode([question]).tolist()
+        # Convert the user's question into an embedding
+        query_embedding = embedding_model.encode([question]).tolist()
 
-    # Retrieve
-    results = collection.query(
-        query_embeddings=query_embedding,
-        n_results=5
-    )
+        # Retrieve the most relevant chunks
+        results = collection.query(
+            query_embeddings=query_embedding,
+            n_results=5
+        )
 
-    retrieved_chunks = results["documents"][0]
+        retrieved_chunks = results["documents"][0]
+        retrieved_metadata = results["metadatas"][0]
 
-    retrieved_metadata = results["metadatas"][0]
+        # Uncomment this block if you want to inspect retrieval quality
+        """
+        print("\nRetrieved Chunks:\n")
 
-    context = "\n\n".join(retrieved_chunks)
-
-    prompt = f"""
-        You are an HR policy assistant.
-
-        Use ONLY the information provided in the context.
-
-        If the context contains enough information to answer the question, answer it naturally.
-
-        If the context does NOT contain enough information, respond ONLY with:
-
-        "I could not find that information in the provided HR policies."
-
-        Do not use outside knowledge.
-        Do not guess.
-        Do not mention what is or isn't in the context.
-        Do not add disclaimers.
-
-        Context:
-        ----------------
-        {context}
-        ----------------
-
-        Question:
-        {question}
+        for i, chunk in enumerate(retrieved_chunks, start=1):
+            print(f"\n----- Chunk {i} -----\n")
+            print(chunk)
         """
 
-    response = ollama.chat(
-        model="qwen2.5:3b",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+        context = "\n\n".join(retrieved_chunks)
 
-    print("\n" + "=" * 80)
-    print("ANSWER")
-    print("=" * 80)
-    print(response["message"]["content"])
+        # Build the prompt
+        prompt = PROMPT_TEMPLATE.format(
+            context=context,
+            question=question
+        )
 
-    print("\nSources:")
+        # Generate answer using Qwen
+        response = ollama.chat(
+            model="qwen2.5:3b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-    # Remove duplicate source names while preserving order
-    seen = set()
-    for metadata in retrieved_metadata:
-        source = metadata["source"]
-        if source not in seen:
-            print(f"- {source}")
-            seen.add(source)
+        print("\n" + "=" * 80)
+        print("ANSWER")
+        print("=" * 80)
+        print(response["message"]["content"])
+
+        print("\nSources:")
+
+        # Print unique source documents
+        seen = set()
+
+        for metadata in retrieved_metadata:
+
+            source = metadata["source"]
+
+            if source not in seen:
+                print(f"- {source}")
+                seen.add(source)
+
+
+if __name__ == "__main__":
+    main()
