@@ -32,10 +32,11 @@ while True:
     # Retrieve
     results = collection.query(
         query_embeddings=query_embedding,
-        n_results=3
+        n_results=5
     )
 
     retrieved_chunks = results["documents"][0]
+
     retrieved_metadata = results["metadatas"][0]
 
     context = "\n\n".join(retrieved_chunks)

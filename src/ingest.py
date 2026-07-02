@@ -14,8 +14,8 @@ embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
 # Set up the text splitter to break large documents into manageable pieces
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=100
+    chunk_size=700,
+    chunk_overlap=150
 )
 
 # Initialize a persistent local Vector Database to store data across script runs
