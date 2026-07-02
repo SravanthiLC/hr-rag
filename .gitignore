@@ -1,0 +1,15 @@
+# Virtual environment
+v1/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Chroma database
+chroma_db/
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
